@@ -36,4 +36,4 @@ RUN ${HOME}/install.sh
 
 WORKDIR ${HOME}
 USER 1000
-CMD ["sh", "/opt/app-root/src/run.sh"]
+CMD ["bash", "/opt/app-root/src/run.sh"]
