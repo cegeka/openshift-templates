@@ -30,7 +30,7 @@ ARG PROMETHEUS_EXPORTER_URL
 ARG MAVEN_REPO_URL=http://download-node-02.eng.bos.redhat.com/brewroot/repos/lpc-rhel-7-maven-build/latest/maven/
 
 ADD probe/ ${ES_HOME}/probe/
-ADD run.sh install.sh ${HOME}/
+ADD init.sh run.sh install.sh ${HOME}/
 
 RUN ${HOME}/install.sh
 

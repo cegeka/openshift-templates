@@ -75,6 +75,8 @@ else
     exit 1
 fi
 
+./init.sh &
+
 # this is because the deployment mounts the configmap at /usr/share/java/elasticsearch/config
 cp /usr/share/java/elasticsearch/config/* $ES_CONF
 
