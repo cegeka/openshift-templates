@@ -1,15 +1,13 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eu
 
 if [ ${DEBUG:-""} = "true" ]; then
     set -x
     LOGLEVEL=7
 fi
 
-source "logging"
-
-info Begin Elasticsearch startup script
+echo Begin Elasticsearch startup script
 
 export KUBERNETES_AUTH_TRYKUBECONFIG=${KUBERNETES_AUTH_TRYKUBECONFIG:-"false"}
 
@@ -45,35 +43,35 @@ if [[ "$CONTAINER_MEM_LIMIT" =~ $regex ]]; then
     fi
 
     #determine if req is less then max recommended by ES
-    info "Comparing the specified RAM to the maximum recommended for Elasticsearch..."
+    echo "Comparing the specified RAM to the maximum recommended for Elasticsearch..."
     if [ ${MAX_ES_MEMORY_BYTES} -lt ${num} ]; then
         ((num = ${MAX_ES_MEMORY_BYTES}))
-        warn "Downgrading the CONTAINER_MEM_LIMIT to $(($num / BYTES_PER_MEG))m because ${CONTAINER_MEM_LIMIT} will result in a larger heap then recommended."
+        echo "Downgrading the CONTAINER_MEM_LIMIT to $(($num / BYTES_PER_MEG))m because ${CONTAINER_MEM_LIMIT} will result in a larger heap then recommended."
     fi
 
     #determine max allowable memory
-    info "Inspecting the maximum RAM available..."
+    echo "Inspecting the maximum RAM available..."
     mem_file="/sys/fs/cgroup/memory/memory.limit_in_bytes"
     if [ -r "${mem_file}" ]; then
         max_mem="$(cat ${mem_file})"
         if [ ${max_mem} -lt ${num} ]; then
             ((num = ${max_mem}))
-            warn "Setting the maximum allowable RAM to $(($num / BYTES_PER_MEG))m which is the largest amount available"
+            echo "Setting the maximum allowable RAM to $(($num / BYTES_PER_MEG))m which is the largest amount available"
         fi
     else
-        error "Unable to determine the maximum allowable RAM for this host in order to configure Elasticsearch"
+        echo "Unable to determine the maximum allowable RAM for this host in order to configure Elasticsearch"
         exit 1
     fi
 
     if [[ $num -lt $MIN_ES_MEMORY_BYTES ]]; then
-        error "A minimum of $(($MIN_ES_MEMORY_BYTES/$BYTES_PER_MEG))m is required but only $(($num/$BYTES_PER_MEG))m is available or was specified"
+        echo "A minimum of $(($MIN_ES_MEMORY_BYTES/$BYTES_PER_MEG))m is required but only $(($num/$BYTES_PER_MEG))m is available or was specified"
         exit 1
     fi
     num=$(($num/2/BYTES_PER_MEG))
     export ES_JAVA_OPTS="${ES_JAVA_OPTS:-} -Xms${num}m -Xmx${num}m"
-    info "ES_JAVA_OPTS: '${ES_JAVA_OPTS}'"
+    echo "ES_JAVA_OPTS: '${ES_JAVA_OPTS}'"
 else
-    error "CONTAINER_MEM_LIMIT is invalid: $CONTAINER_MEM_LIMIT"
+    echo "CONTAINER_MEM_LIMIT is invalid: $CONTAINER_MEM_LIMIT"
     exit 1
 fi
 
@@ -83,13 +81,13 @@ fi
 cp /usr/share/java/elasticsearch/config/* $ES_CONF
 
 HEAP_DUMP_LOCATION="${HEAP_DUMP_LOCATION:-/elasticsearch/persistent/hdump.prof}"
-info Setting heap dump location "$HEAP_DUMP_LOCATION"
+echo Setting heap dump location "$HEAP_DUMP_LOCATION"
 
 #bz1627086 - These options should be removable after 5.x"
 es5x_java_opts="-Dio.netty.recycler.maxCapacityPerThread=0 -Dio.netty.allocator.type=unpooled"
 
 export ES_JAVA_OPTS="${ES_JAVA_OPTS:-} -XX:HeapDumpPath=$HEAP_DUMP_LOCATION -Dsg.display_lic_none=false ${es5x_java_opts:-}"
-info "ES_JAVA_OPTS: '${ES_JAVA_OPTS}'"
+echo "ES_JAVA_OPTS: '${ES_JAVA_OPTS}'"
 
 DHE_TMP_KEY_SIZE=${DHE_TMP_KEY_SIZE:-2048}
 export ES_JAVA_OPTS="${ES_JAVA_OPTS:-} -Djdk.tls.ephemeralDHKeySize=$DHE_TMP_KEY_SIZE"
